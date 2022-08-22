@@ -44,6 +44,19 @@ public class SelectionController : ControllerBase
             sqlCommand.Parameters.AddWithValue("@avatar", selection.Avatar);
             sqlCommand.ExecuteNonQuery();
 
+
+            sqlCommand.CommandText = "select * from Voting where cno=@cno";
+            sqlDataReader = sqlCommand.ExecuteReader();
+            if (!sqlDataReader.Read())
+            {
+                sqlDataReader.Close();
+                sqlCommand.CommandText = "insert into Voting (cno) values (@cno);";
+                sqlCommand.ExecuteNonQuery();
+            }
+            else
+            {
+                sqlDataReader.Close();
+            }
             return new
             {
                 rno = selection.Rno,
@@ -72,7 +85,6 @@ public class SelectionController : ControllerBase
         SqlConnection sqlConnection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Administrator\Workspace\ASP.NET\Fresher_Welcome_Voting\FresherWelcome.mdf;Integrated Security=True;Connect Timeout=30");
         sqlConnection.Open();
         SqlCommand sqlCommand = sqlConnection.CreateCommand();
-
         try
         {
             string filter = "";
@@ -110,14 +122,9 @@ public class SelectionController : ControllerBase
             }
             sqlDataReader.Close();
 
-            if (result.Count() > 0)
-            {
-                return result;
-            }
-            else
-            {
+            if (result.Count() <= 0)
                 return new Feedback(Response, 404, "Not Found", "Contestant is not found!");
-            }
+            return result;
         }
         catch (Exception e)
         {
@@ -140,91 +147,98 @@ public class SelectionController : ControllerBase
             sqlCommand.CommandText = "select * from Selection where rno = @rno";
             sqlCommand.Parameters.AddWithValue("@rno", selection.Rno);
             SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
-            if (sqlDataReader.Read())
+            if (!sqlDataReader.Read())
             {
-                int cno = (int)sqlDataReader["cno"];
-
-                string changes = "";
-                if (selection.Section?.Length > 0 && selection.Section != sqlDataReader["section"].ToString())
-                {
-                    if (changes != "") changes += ", ";
-                    changes += "section=@section";
-                    sqlCommand.Parameters.AddWithValue("@section", selection.Section);
-                }
-                else
-                {
-                    selection.Section = (string)sqlDataReader["section"];
-                }
-                if (selection.Name?.Length > 0 && selection.Name != sqlDataReader["name"].ToString())
-                {
-                    if (changes != "") changes += ", ";
-                    changes += "name=@name";
-                    sqlCommand.Parameters.AddWithValue("@name", selection.Name);
-                }
-                else
-                {
-                    selection.Name = (string)sqlDataReader["name"];
-                }
-                if (selection.Age > 0 && selection.Age != (int)sqlDataReader["age"])
-                {
-                    if (changes != "") changes += ", ";
-                    changes += "age=@age";
-                    sqlCommand.Parameters.AddWithValue("@age", selection.Age);
-                }
-                else
-                {
-                    selection.Age = (int)sqlDataReader["age"];
-                }
-                if (selection.Avatar?.Length > 0 && selection.Avatar != sqlDataReader["avatar"].ToString())
-                {
-                    if (changes != "") changes += ", ";
-                    changes += "avatar=@avatar";
-                    sqlCommand.Parameters.AddWithValue("@avatar", selection.Avatar);
-                }
-                else
-                {
-                    selection.Avatar = (string)sqlDataReader["avatar"];
-                }
-                if (selection.Gender?.Length > 0 && selection.Gender != sqlDataReader["gender"].ToString())
-                {
-                    if (changes != "") changes += ", ";
-
-                    sqlDataReader.Close();
-                    sqlCommand.CommandText = "select * from Selection where gender = @gender";
-                    sqlCommand.Parameters.AddWithValue("@gender", selection.Gender);
-                    sqlDataReader = sqlCommand.ExecuteReader();
-                    cno = 1;
-                    while (sqlDataReader.Read())
-                    {
-                        cno++;
-                    }
-                    sqlCommand.Parameters.AddWithValue("@cno", cno);
-                    changes += "gender = @gender, cno = @cno";
-                }
-                else
-                {
-                    selection.Gender = (string)sqlDataReader["gender"];
-                }
-                sqlCommand.CommandText = "update Selection set " + changes + " where rno = @rno";
-                sqlDataReader.Close();
-                sqlCommand.ExecuteNonQuery();
-                return new
-                {
-                    rno = selection.Rno,
-                    cno,
-                    section = selection.Section,
-                    name = selection.Name,
-                    gender = selection.Gender,
-                    age = selection.Age,
-                    avatar = selection.Avatar
-                };
-            }
-            else
-            {
-                Console.Write("l");
                 sqlDataReader.Close();
                 return new Feedback(Response, 404, "Not Found", "Rollno not found!");
             }
+
+            int cno = (int)sqlDataReader["cno"];
+            string changes = "";
+
+            if (selection.Section?.Length > 0 && selection.Section != sqlDataReader["section"].ToString())
+            {
+                if (changes != "") changes += ", ";
+                changes += "section=@section";
+                sqlCommand.Parameters.AddWithValue("@section", selection.Section);
+            }
+            else
+            {
+                selection.Section = (string)sqlDataReader["section"];
+            }
+
+            if (selection.Name?.Length > 0 && selection.Name != sqlDataReader["name"].ToString())
+            {
+                if (changes != "") changes += ", ";
+                changes += "name=@name";
+                sqlCommand.Parameters.AddWithValue("@name", selection.Name);
+            }
+            else
+            {
+                selection.Name = (string)sqlDataReader["name"];
+            }
+
+            if (selection.Age > 0 && selection.Age != (int)sqlDataReader["age"])
+            {
+                if (changes != "") changes += ", ";
+                changes += "age=@age";
+                sqlCommand.Parameters.AddWithValue("@age", selection.Age);
+            }
+            else
+            {
+                selection.Age = (int)sqlDataReader["age"];
+            }
+
+            if (selection.Avatar?.Length > 0 && selection.Avatar != sqlDataReader["avatar"].ToString())
+            {
+                if (changes != "") changes += ", ";
+                changes += "avatar=@avatar";
+                sqlCommand.Parameters.AddWithValue("@avatar", selection.Avatar);
+            }
+            else
+            {
+                selection.Avatar = (string)sqlDataReader["avatar"];
+            }
+
+            if (selection.Gender?.Length > 0 && selection.Gender != sqlDataReader["gender"].ToString())
+            {
+                if (changes != "") changes += ", ";
+
+                sqlDataReader.Close();
+                sqlCommand.CommandText = "select * from Selection where gender = @gender";
+                sqlCommand.Parameters.AddWithValue("@gender", selection.Gender);
+                sqlDataReader = sqlCommand.ExecuteReader();
+                cno = 1;
+                while (sqlDataReader.Read())
+                {
+                    cno++;
+                }
+                sqlCommand.Parameters.AddWithValue("@cno", cno);
+                changes += "gender = @gender, cno = @cno";
+            }
+            else
+            {
+                selection.Gender = (string)sqlDataReader["gender"];
+            }
+
+            sqlDataReader.Close();
+
+            if (changes!="")
+            {
+                sqlCommand.CommandText = "update Selection set " + changes + " where rno = @rno";
+                sqlCommand.ExecuteNonQuery();
+            }
+
+            return new
+            {
+                rno = selection.Rno,
+                cno,
+                section = selection.Section,
+                name = selection.Name,
+                gender = selection.Gender,
+                age = selection.Age,
+                avatar = selection.Avatar
+            };
         }
         catch (Exception e)
         {
@@ -234,7 +248,6 @@ public class SelectionController : ControllerBase
         {
             sqlConnection.Close();
         }
-
     }
 
     [HttpDelete]
@@ -243,14 +256,33 @@ public class SelectionController : ControllerBase
         SqlConnection sqlConnection = new SqlConnection(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\Administrator\Workspace\ASP.NET\Fresher_Welcome_Voting\FresherWelcome.mdf;Integrated Security=True;Connect Timeout=30");
         sqlConnection.Open();
         SqlCommand sqlCommand = sqlConnection.CreateCommand();
-        sqlCommand.CommandText = "delete from Selection where rno = @rno";
-        sqlCommand.Parameters.AddWithValue("@rno", rno);
+
         try
         {
-            if (sqlCommand.ExecuteNonQuery() > 0)
-                return new Feedback(Response, 200, "OK", "Deleted");
-            else
-                return new Feedback(Response, 404, "Not Found", "Contesrtant Not Found!");
+            sqlCommand.CommandText = "select cno,gender from Selection where rno = @rno;";
+            sqlCommand.Parameters.AddWithValue("@rno", rno);
+            SqlDataReader sqlDataReader = sqlCommand.ExecuteReader();
+            if (!sqlDataReader.Read())
+            {
+                sqlDataReader.Close();
+                return new Feedback(Response, 404, "Not Found", "Rollno not found!");
+            }
+
+            sqlCommand.CommandText = "select * from Selection where cno = @cno and gender!=@gender;";
+            sqlCommand.Parameters.AddWithValue("@cno", sqlDataReader["cno"]);
+            sqlCommand.Parameters.AddWithValue("@gender", sqlDataReader["gender"]);
+            sqlDataReader.Close();
+
+            sqlDataReader = sqlCommand.ExecuteReader();
+            sqlCommand.CommandText = "delete from Selection where rno = @rno;";
+            if (!sqlDataReader.Read())
+                sqlCommand.CommandText += "delete from Voting where cno = @cno;";
+            sqlDataReader.Close();
+
+            if(sqlCommand.ExecuteNonQuery()<=0)
+                return new Feedback(Response, 404, "Not Found", "Contestant not found!");
+
+            return new Feedback(Response, 200, "OK", "Deleted");
         }
         catch (Exception e)
         {

@@ -1,5 +1,3 @@
-using System.Data.SqlClient;
-
 namespace Fresher_Welcome_Voting;
 
 public class Selection
